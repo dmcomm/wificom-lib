@@ -31,8 +31,9 @@ new_digirom = None
 rtb_user_type = None
 rtb_active = False
 rtb_host = None
-battle_type = None
+rtb_battle_type = None
 rtb_topic = None
+rtb_digirom = None
 
 class PlatformIO:
 	'''
@@ -133,7 +134,7 @@ class PlatformIO:
 			global last_application_id, rtb_active, rtb_user_type, rtb_topic
 			# create json object containing output and device_uuid
 			mqtt_message = {
-				"application_uuid": 1,
+				"application_id": 1,
 				"device_uuid": secrets_device_uuid,
 				"output": str(output),
 				"user_type": rtb_user_type,
@@ -204,7 +205,7 @@ def on_app_feed_callback(client, topic, message):
 
 	# pylint: disable=global-statement
 	global last_application_id, is_output_hidden, new_digirom, rtb_user_type, \
-			rtb_active, rtb_host, rtb_topic
+			rtb_active, rtb_host, rtb_topic, rtb_battle_type
 
 	print(message_json)
 
@@ -216,6 +217,7 @@ def on_app_feed_callback(client, topic, message):
 			rtb_active = True
 			rtb_user_type = message_json['user_type']
 			rtb_host = message_json['host']
+			rtb_battle_type = message_json['battle_type']
 			mqtt_client.subscribe(rtb_host + "/f/" + message_json['topic'])
 			io.add_feed_callback(message_json['topic'], on_realtime_battle_feed_callback)
 
@@ -259,21 +261,13 @@ def on_realtime_battle_feed_callback(client, topic, message):
 	message_json = json.loads(message)
 
 	# pylint: disable=global-statement
-	global last_application_id, is_output_hidden, new_digirom
+	global last_application_id, is_output_hidden, rtb_digirom
 
 	if rtb_active:
 		if 'user_type' in message_json:
 			if message_json['user_type'] is not None and message_json['user_type'] != rtb_user_type:
 				last_application_id = message_json['application_id']
-				is_output_hidden = message_json['hide_output']
-				# pylint: disable=broad-except
-				try:
-					# parse Digirom
-					dmcomm.protocol.parse_command(message_json['output'])
-					new_digirom = message_json['output']
-				except (Exception) as error:
-					print("Error parsing output, is it a Digirom?")
-					print(error)
+				rtb_digirom = message_json['output']
 			else:
 				print('rtb_user_type is not[' + rtb_user_type + '] ignoring Digirom')
 	else:
