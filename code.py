@@ -156,7 +156,7 @@ while True:
 			elif platform_io.rtb_digirom is not None:
 				rtb_rom_executed = receive_rtb_legendz()
 				if len(rtb_rom_executed.result) >= 4:
-					msg = "LT1-" + str(rtb_rom_executed.result[0])[2:] + "-AA590003" * 3
+					msg = "LT1-" + str(rtb_rom_executed.result[1])[2:] + "-AA590003" * 3
 					print(msg)
 					platform_io_obj.on_rtb_digirom_output(msg)
 		else:
