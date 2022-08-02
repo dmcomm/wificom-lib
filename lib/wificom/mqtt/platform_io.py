@@ -143,7 +143,7 @@ class PlatformIO:
 			mqtt_message_json = json.dumps(mqtt_message)
 
 			if rtb_active:
-				mqtt_client.publish(self.mqtt_io_prefix + rtb_topic, mqtt_message_json)
+				mqtt_client.publish(rtb_host + '/f/' + rtb_topic, mqtt_message_json)
 			else:
 				print("RTB not active, shouldn't be calling this callback while RTB is inactive")
 
@@ -219,7 +219,7 @@ def on_app_feed_callback(client, topic, message):
 			rtb_host = message_json['host']
 			rtb_battle_type = message_json['battle_type']
 			mqtt_client.subscribe(rtb_host + "/f/" + message_json['topic'])
-			io.add_feed_callback(message_json['topic'], on_realtime_battle_feed_callback)
+			mqtt_client.add_topic_callback(rtb_host + "/f/" + message_json['topic'], on_realtime_battle_feed_callback)
 
 		elif message_json['topic_action'] == "unsubscribe":
 
