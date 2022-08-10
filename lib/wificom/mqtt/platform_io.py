@@ -17,7 +17,6 @@ import dmcomm.protocol
  # Initialize a new MQTT Client object
 mqtt_client = MQTT.MQTT(
 	broker=secrets_mqtt_broker,
-	port=1883,
 	username=secrets_mqtt_username.lower(),
 	password=secrets_mqtt_password
 )

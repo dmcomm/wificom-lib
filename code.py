@@ -1,6 +1,6 @@
 '''
 This file is part of the DMComm project by BladeSabre. License: MIT.
-WiFiCom on Arduino Nano RP2040 Connect, with BladeSabre's pin assignments.
+WiFiCom on supported boards (see board_config.py).
 '''
 import time
 import board
@@ -12,31 +12,23 @@ from dmcomm import CommandError, ReceiveError
 import dmcomm.hardware as hw
 import dmcomm.protocol
 import dmcomm.protocol.auto
-from wificom.hardware.rp2040_arduino_nano_connect import RP2040ArduinoNanoConnect, esp
+from wificom.hardware.wifi import Wifi
 from wificom.mqtt import platform_io
+import board_config
 
-pins_extra_power = [
-	(board.D6, False), (board.D7, True),
-	(board.D8, False),
-	(board.D11, False), (board.D12, True),
-]
 outputs_extra_power = []
-for (pin, value) in pins_extra_power:
+for (pin, value) in board_config.extra_power_pins:
 	output = digitalio.DigitalInOut(pin)
 	output.direction = digitalio.Direction.OUTPUT
 	output.value = value
 	outputs_extra_power.append(output)
 
+controller = hw.Controller()
+for pin_description in board_config.controller_pins:
+	controller.register(pin_description)
+
 led = digitalio.DigitalInOut(board.LED)
 led.direction = digitalio.Direction.OUTPUT
-
-controller = hw.Controller()
-controller.register(hw.ProngOutput(board.A0, board.A2))
-controller.register(hw.ProngInput(board.A3))
-controller.register(hw.InfraredOutput(board.D9))
-controller.register(hw.InfraredInputModulated(board.D10))
-controller.register(hw.InfraredInputRaw(board.D5))
-controller.register(hw.TalisInputOutput(board.D4))
 
 # Serial port selection
 if usb_cdc.data is not None:
@@ -67,8 +59,8 @@ def serial_print(contents):
 serial_print("dmcomm-python starting\n")
 
 # Connect to WiFi
-device = RP2040ArduinoNanoConnect()
-device.connect_to_ssid()
+wifi = Wifi(**board_config.wifi_pins)
+esp = wifi.connect()
 
 # Connect to MQTT
 platform_io_obj = platform_io.PlatformIO()
