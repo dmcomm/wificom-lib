@@ -12,6 +12,7 @@ from dmcomm import CommandError, ReceiveError
 import dmcomm.hardware as hw
 import dmcomm.protocol
 import dmcomm.protocol.auto
+import dmcomm.protocol.realtime as rt
 from wificom.hardware.wifi import Wifi
 from wificom.mqtt import platform_io
 import board_config
@@ -30,6 +31,24 @@ for pin_description in board_config.controller_pins:
 led = digitalio.DigitalInOut(board.LED)
 led.direction = digitalio.Direction.OUTPUT
 
+rtb_types = {
+	("legendz", "host"): rt.RealTimeHostTalis,
+	("legendz", "guest"): rt.RealTimeGuestTalis,
+	("digimon-penx", "host"): rt.RealTimeHostPenXBattle,
+	("digimon-penx", "guest"): rt.RealTimeGuestPenXBattle,
+}
+def rtb_send_callback(message):
+	platform_io_obj.on_rtb_digirom_output(message)
+	print("RTB sent message:", message)
+def rtb_receive_callback():
+	if platform_io.rtb_digirom is not None:
+		msg = platform_io.rtb_digirom
+		platform_io.rtb_digirom = None
+		return msg
+def rtb_status_callback(status):
+	led.value = status == rt.STATUS_PUSH
+rtb_was_active = False
+
 # Serial port selection
 if usb_cdc.data is not None:
 	serial = usb_cdc.data
@@ -45,8 +64,6 @@ digirom = None  # disable
 #digirom = dmcomm.protocol.auto.AutoResponderVX("X")  # 3-prong auto-responder
 #digirom = dmcomm.protocol.parse_command("IC2-0007-^0^207-0007-@400F" + "-0000" * 16)  # Twin any
 # ...or use your own digirom, as for the Twin above.
-
-rtb_went_first_time = None
 
 serial.timeout = 1
 
@@ -80,20 +97,6 @@ def execute_digirom(rom):
 		serial_print("Received output, check the App\n")
 	if error != "":
 		serial_print(error + "\n")
-
-def receive_rtb_legendz():
-	rom_str = platform_io.rtb_digirom
-	platform_io.rtb_digirom = None
-	if not rom_str.startswith("LT1-"):
-		serial_print("Expected Legendz\n")
-		return None
-	try:
-		rom = dmcomm.protocol.parse_command(rom_str)
-		execute_digirom(rom)
-		return rom
-	except CommandError as e:
-		serial_print(repr(e) + "\n")
-		return None
 
 while True:
 	time_start = time.monotonic()
@@ -129,31 +132,22 @@ while True:
 		digirom = dmcomm.protocol.parse_command(replacementDigirom)
 
 	if platform_io_obj.get_is_rtb_active():
+		if not rtb_was_active:
+			rtb_type_id = (platform_io.rtb_battle_type, platform_io.rtb_user_type)
+			if rtb_type_id in rtb_types:
+				rtb = rtb_types[rtb_type_id](
+					execute_digirom,
+					rtb_send_callback,
+					rtb_receive_callback,
+					rtb_status_callback,
+				)
+			else:
+				serial_print(platform_io.rtb_battle_type + " not implemented\n")
+		rtb_was_active = True
 		platform_io_obj.loop()
-		if platform_io.rtb_battle_type == "legendz":
-			if platform_io.rtb_user_type == "host":
-				if rtb_went_first_time is None:
-					rtb_rom = dmcomm.protocol.parse_command("LT0")
-					execute_digirom(rtb_rom)
-					if len(rtb_rom.result) == 2 and len(rtb_rom.result[0].data) >= 20:
-						msg = "LT1-" + str(rtb_rom.result[0])[2:] + "-AA590003" * 3
-						print(msg)
-						platform_io_obj.on_rtb_digirom_output(msg)
-						rtb_went_first_time = time.monotonic()
-				elif time.monotonic() - rtb_went_first_time > 2:
-					rtb_went_first_time = None
-				elif platform_io.rtb_digirom is not None:
-					rtb_went_first_time = None
-					rtb_rom_executed = receive_rtb_legendz()
-			elif platform_io.rtb_digirom is not None:
-				rtb_rom_executed = receive_rtb_legendz()
-				if len(rtb_rom_executed.result) >= 4:
-					msg = "LT1-" + str(rtb_rom_executed.result[1])[2:] + "-AA590003" * 3
-					print(msg)
-					platform_io_obj.on_rtb_digirom_output(msg)
-		else:
-			serial_print(platform_io.rtb_battle_type + " not implemented\n")
+		rtb.loop()
 	else:
+		rtb_was_active = False
 		last_output = None
 		if digirom is not None:
 			execute_digirom(digirom)
