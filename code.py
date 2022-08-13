@@ -160,6 +160,8 @@ while True:
 		platform_io_obj.loop()
 		rtb.loop()
 	else:
+		if rtb_was_active:
+			led.value = False
 		rtb_was_active = False
 		last_output = None
 		if digirom is not None:
