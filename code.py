@@ -38,14 +38,24 @@ rtb_types = {
 	("digimon-penx", "guest"): rt.RealTimeGuestPenXBattle,
 }
 def rtb_send_callback(message):
+	'''
+	Called when a RTB object sends a message.
+	'''
 	platform_io_obj.on_rtb_digirom_output(message)
 	print("RTB sent message:", message)
 def rtb_receive_callback():
+	'''
+	Called when a RTB object checks for messages received.
+	'''
 	if platform_io.rtb_digirom is not None:
 		msg = platform_io.rtb_digirom
 		platform_io.rtb_digirom = None
 		return msg
+	return None
 def rtb_status_callback(status):
+	'''
+	Called when a RTB object updates the status display.
+	'''
 	led.value = status == rt.STATUS_PUSH
 rtb_was_active = False
 
@@ -84,12 +94,15 @@ platform_io_obj = platform_io.PlatformIO()
 platform_io_obj.connect_to_mqtt(esp)
 
 def execute_digirom(rom):
+	'''
+	Execute the digirom and report results according to reporting settings.
+	'''
 	error = ""
 	result_end = "\n"
 	try:
 		controller.execute(rom)
-	except (CommandError, ReceiveError) as e:
-		error = repr(e)
+	except (CommandError, ReceiveError) as ex:
+		error = repr(ex)
 		result_end = " "
 	if not platform_io_obj.get_is_output_hidden():
 		serial_print(str(rom.result) + result_end)

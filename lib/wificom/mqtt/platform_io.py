@@ -11,7 +11,6 @@ secrets_user_uuid
 import adafruit_esp32spi.adafruit_esp32spi_socket as socket
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 from adafruit_io.adafruit_io import IO_MQTT
-import dmcomm.protocol
 
 
  # Initialize a new MQTT Client object
@@ -218,7 +217,10 @@ def on_app_feed_callback(client, topic, message):
 			rtb_host = message_json['host']
 			rtb_battle_type = message_json['battle_type']
 			mqtt_client.subscribe(rtb_host + "/f/" + message_json['topic'])
-			mqtt_client.add_topic_callback(rtb_host + "/f/" + message_json['topic'], on_realtime_battle_feed_callback)
+			mqtt_client.add_topic_callback(
+				rtb_host + "/f/" + message_json['topic'],
+				on_realtime_battle_feed_callback
+			)
 
 		elif message_json['topic_action'] == "unsubscribe":
 
@@ -260,7 +262,7 @@ def on_realtime_battle_feed_callback(client, topic, message):
 	message_json = json.loads(message)
 
 	# pylint: disable=global-statement
-	global last_application_id, is_output_hidden, rtb_digirom
+	global last_application_id, rtb_digirom
 
 	if rtb_active:
 		if 'user_type' in message_json:
