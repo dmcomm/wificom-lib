@@ -34,8 +34,8 @@ led.direction = digitalio.Direction.OUTPUT
 rtb_types = {
 	("legendz", "host"): rt.RealTimeHostTalis,
 	("legendz", "guest"): rt.RealTimeGuestTalis,
-	("digimon-penx", "host"): rt.RealTimeHostPenXBattle,
-	("digimon-penx", "guest"): rt.RealTimeGuestPenXBattle,
+	("digimon-penx-battle", "host"): rt.RealTimeHostPenXBattle,
+	("digimon-penx-battle", "guest"): rt.RealTimeGuestPenXBattle,
 }
 def rtb_send_callback(message):
 	'''
