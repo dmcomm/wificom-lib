@@ -3,6 +3,7 @@ platform_io.py
 Handle MQTT connections, subscriptions, and callbacks
 '''
 import json
+import time
 from wificom.common.import_secrets import secrets_mqtt_username, \
 secrets_device_uuid, \
 secrets_user_uuid
@@ -66,7 +67,9 @@ def loop():
 	'''
 	Loop IO MQTT client
 	'''
+	print(time.monotonic(), "start loop")
 	_io.loop()
+	print(time.monotonic(), "end loop")
 
 def get_subscribed_output(clear_rom=True):
 	'''
@@ -244,7 +247,7 @@ def on_realtime_battle_feed_callback(client, topic, message):
 		}
 	'''
 	# pylint: disable=consider-using-f-string
-	print("New RTB message on topic {0}: {1} ".format(topic, message))
+	print(time.monotonic(), "New RTB message on topic {0}: {1} ".format(topic, message))
 	# parse message as json
 	message_json = json.loads(message)
 
